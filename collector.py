@@ -1,4 +1,4 @@
-"""Collector
+"""System Metrics Collector for Grafana
 
 Copyright (c) 2021 Mathieu BARBE-GAYET
 All Rights Reserved.
@@ -17,15 +17,14 @@ def get_cpu_percent():
 
     Returns: CPU usage percentage in a dictionary
 
-     Available fields : cpu_percent
+    Available fields : cpu_percent
     """
     stats = psutil.cpu_percent(
         interval=None,
         percpu=False
     )
-    #
+
     # Here, a dictionary is used and returned in case if we want to monitor each cpu core later
-    #
     stats_dict = {
         "cpu_percent": str(stats)
     }
@@ -178,9 +177,8 @@ def write_to_db(sql_statement):
     Args:
         sql_statement (str) : the SQL statement to execute
     """
-    #
+
     # Connexion to DB
-    #
     try:
         conn = mariadb.connect(
             user="root",
@@ -192,22 +190,19 @@ def write_to_db(sql_statement):
     except mariadb.Error as e:
         print(f"Error connecting to MariaDB Platform: {e}")
         return
-    #
+
     # Cursor create
-    #
     cur = conn.cursor()
-    #
+
     # Execute SQL statement
-    #
     cur.execute(sql_statement)
-    #
+
     # Commit DB
-    #
     conn.commit()
-    #
+
     # Close connection
-    #
     conn.close()
+
     print(sql_statement)
 
 
@@ -216,18 +211,16 @@ def main():
     while True:
         try:
             time.sleep(5)
-            #
+
             # Get the current timestamp to write in the log files
-            #
             dtf = "%d%m%Y"
             date = datetime.now().strftime(dtf)
-            #
+
             # For each statistic we monitor, we try to:
             # 1/ get the stats from psutils
             # 2/ store it into a dedicated log file
             # 3/ build a statement
             # 4/ use the statement to write statistics into the database
-            #
             try:
                 cpu_percent = get_cpu_percent()
                 store_data_to_file(cpu_percent, "./" + date + "-cpu_percent.log")
@@ -235,6 +228,7 @@ def main():
                 write_to_db(cpu_statement)
             except Exception as e:
                 logging.error(date, 'CPU usage collection failed.', exc_info=e)
+
             try:
                 virtual_mem = get_virtual_memory()
                 store_data_to_file(virtual_mem, "./" + date + "-virtual_mem.log")
@@ -242,6 +236,7 @@ def main():
                 write_to_db(mem_statement)
             except Exception as e:
                 logging.error(date, 'Virtual memory usage collection failed.', exc_info=e)
+
             try:
                 disk = get_disk_usage()
                 store_data_to_file(disk, "./" + date + "-disk.log")
@@ -249,6 +244,7 @@ def main():
                 write_to_db(disk_statement)
             except Exception as e:
                 logging.error(date, 'Disk usage collection failed.', exc_info=e)
+
             try:
                 net_usage = get_net_io_counters()
                 store_data_to_file(net_usage, "./" + date + "-net_usage.log")
